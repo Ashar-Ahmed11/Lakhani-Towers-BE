@@ -35,7 +35,10 @@ router.get('/', fetchAdmin, async (req, res) => {
 // Read one
 router.get('/:id', fetchAdmin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id)
+      .populate({ path: 'ownerOf.flat', select: 'flatNumber' })
+      .populate({ path: 'tenantOf.flat', select: 'flatNumber' })
+      .populate({ path: 'renterOf.flat', select: 'flatNumber' });
     res.json(user);
   } catch {
     res.status(500).json({ message: 'Server error' });

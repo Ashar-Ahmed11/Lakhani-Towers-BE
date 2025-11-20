@@ -23,7 +23,13 @@ router.post(
 
 router.get('/', fetchAdmin, async (req, res) => {
   try {
-    const list = await CustomHeaderRecord.find().sort({ createdAt: -1 });
+    const list = await CustomHeaderRecord.find()
+      .sort({ createdAt: -1 })
+      .populate({ path: 'header' })
+      .populate({ path: 'fromUser', select: 'userName userMobile' })
+      .populate({ path: 'toUser', select: 'userName userMobile' })
+      .populate({ path: 'fromAdmin', select: 'username email' })
+      .populate({ path: 'toAdmin', select: 'username email' });
     res.json(list);
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -32,7 +38,12 @@ router.get('/', fetchAdmin, async (req, res) => {
 
 router.get('/:id', fetchAdmin, async (req, res) => {
   try {
-    const item = await CustomHeaderRecord.findById(req.params.id);
+    const item = await CustomHeaderRecord.findById(req.params.id)
+      .populate({ path: 'header' })
+      .populate({ path: 'fromUser', select: 'userName userMobile' })
+      .populate({ path: 'toUser', select: 'userName userMobile' })
+      .populate({ path: 'fromAdmin', select: 'username email' })
+      .populate({ path: 'toAdmin', select: 'username email' });
     res.json(item);
   } catch {
     res.status(500).json({ message: 'Server error' });
