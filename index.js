@@ -30,7 +30,9 @@ const seedDefaultAdmin = async () => {
         console.error('Admin seed error', e.message);
     }
 };
+
 seedDefaultAdmin();
+
 
 // Routes
 app.use('/api/admin', require('./routes/adminAuth'))

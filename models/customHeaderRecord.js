@@ -21,6 +21,7 @@ const MonthItemSchema = new Schema(
 const CustomHeaderRecordSchema = new Schema(
   {
     header: { type: Schema.Types.ObjectId, ref: 'CustomHeader', required: true },
+    purpose: { type: String, default: '' },
     fromUser: { type: Schema.Types.ObjectId, ref: 'User' },
     fromAdmin: { type: Schema.Types.ObjectId, ref: 'Admin' },
     toUser: { type: Schema.Types.ObjectId, ref: 'User' },

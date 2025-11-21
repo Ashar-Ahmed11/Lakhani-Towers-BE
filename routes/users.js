@@ -35,11 +35,49 @@ router.get('/', fetchAdmin, async (req, res) => {
 // Read one
 router.get('/:id', fetchAdmin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
+    const Maintenance = require('../models/maintenance');
+    const CustomHeader = require('../models/customHeader');
+    const CustomHeaderRecord = require('../models/customHeaderRecord');
+
+    let user = await User.findById(req.params.id)
       .populate({ path: 'ownerOf.flat', select: 'flatNumber' })
       .populate({ path: 'tenantOf.flat', select: 'flatNumber' })
-      .populate({ path: 'renterOf.flat', select: 'flatNumber' });
-    res.json(user);
+      .populate({ path: 'renterOf.flat', select: 'flatNumber' })
+      .populate({ path: 'incomingRecords', select: 'amount dateOfAddition header purpose month', populate: { path: 'header', select: 'headerName headerType' } })
+      .populate({ path: 'expenseRecords', select: 'amount dateOfAddition header purpose month', populate: { path: 'header', select: 'headerName headerType' } });
+
+    const missing = (user?.incomingRecords || []).filter(r => !r.header);
+    if (missing.length > 0) {
+      const maintHeader = await CustomHeader.findOne({
+        headerType: 'Incoming',
+        $or: [{ headerName: /maintenance/i }, { headerName: /maintanance/i }]
+      });
+      if (maintHeader) {
+        for (const rec of missing) {
+          const m = await Maintenance.findOne({ recordRef: rec._id });
+          if (m) {
+            await CustomHeaderRecord.updateOne({ _id: rec._id }, { $set: { header: maintHeader._id } });
+          }
+        }
+        user = await User.findById(req.params.id)
+          .populate({ path: 'ownerOf.flat', select: 'flatNumber' })
+          .populate({ path: 'tenantOf.flat', select: 'flatNumber' })
+          .populate({ path: 'renterOf.flat', select: 'flatNumber' })
+          .populate({ path: 'incomingRecords', select: 'amount dateOfAddition header purpose month', populate: { path: 'header', select: 'headerName headerType' } })
+          .populate({ path: 'expenseRecords', select: 'amount dateOfAddition header purpose month', populate: { path: 'header', select: 'headerName headerType' } });
+      }
+    }
+
+    // Attach maintenanceId to incoming records for edit routing
+    const out = user.toObject();
+    // const Maintenance = require('../models/maintenance');
+    const recIds = (out.incomingRecords || []).map(r => r._id);
+    if (recIds.length) {
+      const maints = await Maintenance.find({ recordRef: { $in: recIds } }, { _id: 1, recordRef: 1 });
+      const mapId = new Map(maints.map(m => [String(m.recordRef), String(m._id)]));
+      out.incomingRecords = out.incomingRecords.map(r => ({ ...r, maintenanceId: mapId.get(String(r._id)) }));
+    }
+    res.json(out);
   } catch {
     res.status(500).json({ message: 'Server error' });
   }

@@ -32,7 +32,7 @@ router.get('/', fetchAdmin, async (req, res) => {
 
 router.get('/:id', fetchAdmin, async (req, res) => {
   try {
-    const item = await Employee.findById(req.params.id);
+    const item = await Employee.findById(req.params.id).populate({ path: 'employeeSalaryRecords', select: 'amount dateOfCreation month' });
     res.json(item);
   } catch {
     res.status(500).json({ message: 'Server error' });
