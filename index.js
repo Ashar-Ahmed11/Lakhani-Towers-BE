@@ -43,6 +43,10 @@ app.use('/api/salaries', require('./routes/salaries'))
 app.use('/api/maintenance', require('./routes/maintenance'))
 app.use('/api/custom-headers', require('./routes/customHeaders'))
 app.use('/api/custom-header-records', require('./routes/customHeaderRecords'))
+app.use('/api/loans', require('./routes/loans'))
+app.use('/api/shops', require('./routes/shops'))
+app.use('/api/shops-maintenance', require('./routes/shopMaintenance'))
+app.use('/api/managers', require('./routes/managers'))
 
 
 app.listen(port, () => {

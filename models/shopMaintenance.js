@@ -3,13 +3,11 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const ImageSchema = new Schema(
-  {
-    url: { type: String, required: true, trim: true },
-  },
+  { url: { type: String, required: true, trim: true } },
   { _id: false }
 );
 
-const MaintenanceSchema = new Schema(
+const ShopMaintenanceSchema = new Schema(
   {
     maintenancePurpose: { type: String, required: true, trim: true },
     maintenanceAmount: { type: String, required: true, trim: true },
@@ -21,14 +19,14 @@ const MaintenanceSchema = new Schema(
         occuranceDate: { type: Date, default: Date.now },
       },
     ],
-    flat: { type: Schema.Types.ObjectId, ref: 'Flat' },
+    shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
     from: { type: Schema.Types.ObjectId, ref: 'User' },
     to: { type: Schema.Types.ObjectId, ref: 'Admin' },
-    recordRef: { type: Schema.Types.ObjectId, ref: 'CustomHeaderRecord' },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Maintenance', MaintenanceSchema);
+module.exports = mongoose.model('ShopMaintenance', ShopMaintenanceSchema);
+
 
 

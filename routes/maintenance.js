@@ -16,7 +16,17 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     try {
-      const item = await Maintenance.create(req.body);
+      const item = await Maintenance.create({
+        maintenancePurpose: req.body.maintenancePurpose,
+        maintenanceAmount: req.body.maintenanceAmount,
+        documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
+        month: (req.body.month || []).map(m => ({
+          status: m.status, amount: Number(m.amount || 0), occuranceDate: m.occuranceDate || new Date()
+        })),
+        flat: req.body.flat || null,
+        from: req.body.from || null,
+        to: req.body.to || null,
+      });
       // link with pre-existing 'Maintenance' header only (do not create dynamically)
       // Try to find existing prebuilt Maintenance header (handle common spellings)
       let header = await CustomHeader.findOne({
@@ -51,7 +61,7 @@ router.post(
 
 router.get('/', fetchAdmin, async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const { from, to, status } = req.query;
     const query = {};
     if (from || to) {
       query.createdAt = {};
@@ -64,7 +74,17 @@ router.get('/', fetchAdmin, async (req, res) => {
         }
       }
     }
-    const list = await Maintenance.find(query).sort({ createdAt: -1 }).populate({ path: 'flat', select: 'flatNumber' }).populate({ path: 'from', select: 'userName userMobile' });
+    let list = await Maintenance.find(query).sort({ createdAt: -1 }).populate({ path: 'flat', select: 'flatNumber' }).populate({ path: 'from', select: 'userName userMobile' });
+    if (status) {
+      list = (list || []).filter(r => {
+        const months = r.month || [];
+        if (!Array.isArray(months) || months.length === 0) return status === 'Pending';
+        const hasDue = months.some(m => m?.status === 'Due');
+        if (hasDue) return status === 'Due';
+        const allPaid = months.every(m => m?.status === 'Paid');
+        return allPaid ? status === 'Paid' : status === 'Pending';
+      });
+    }
     res.json(list);
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -93,7 +113,20 @@ router.get('/public/:id', async (req, res) => {
 
 router.put('/:id', fetchAdmin, async (req, res) => {
   try {
-    const updated = await Maintenance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const payload = {
+      maintenancePurpose: req.body.maintenancePurpose,
+      maintenanceAmount: req.body.maintenanceAmount,
+      documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
+      flat: req.body.flat || null,
+      from: req.body.from || null,
+      to: req.body.to || null,
+    };
+    if (Array.isArray(req.body.month)) {
+      payload.month = req.body.month.map(m => ({
+        status: m.status, amount: Number(m.amount || 0), occuranceDate: m.occuranceDate || new Date()
+      }));
+    }
+    const updated = await Maintenance.findByIdAndUpdate(req.params.id, payload, { new: true });
     // sync linked record if exists
     if (updated.recordRef) {
       await CustomHeaderRecord.findByIdAndUpdate(updated.recordRef, {
