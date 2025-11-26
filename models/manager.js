@@ -19,3 +19,4 @@ const ManagerSchema = new mongoose.Schema(
 module.exports = mongoose.model('Manager', ManagerSchema);
 
 
+

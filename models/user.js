@@ -5,6 +5,7 @@ const { Schema } = mongoose;
 const UserRelationRefSchema = new Schema(
   {
     flat: { type: Schema.Types.ObjectId, ref: 'Flat' },
+    shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
     owned: { type: Boolean }, // for Owner Of
     active: { type: Boolean }, // for Tenant Of / Renter Of
   },
