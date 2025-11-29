@@ -21,37 +21,17 @@ router.post(
         maintenanceAmount: req.body.maintenanceAmount,
         documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
         month: (req.body.month || []).map(m => ({
-          status: m.status, amount: Number(m.amount || 0), occuranceDate: m.occuranceDate || new Date()
+          status: m.status,
+          amount: Number(m.amount || 0),
+          occuranceDate: m.occuranceDate || new Date(),
+          paidAmount: Number(m.paidAmount || (m.status === 'Paid' ? Number(m.amount || 0) : 0)),
         })),
         flat: req.body.flat || null,
         from: req.body.from || null,
         to: req.body.to || null,
       });
-      // link with pre-existing 'Maintenance' header only (do not create dynamically)
-      // Try to find existing prebuilt Maintenance header (handle common spellings)
-      let header = await CustomHeader.findOne({
-        headerType: 'Incoming',
-        $or: [
-          { headerName: /maintenance/i },
-          { headerName: /maintanance/i }
-        ]
-      });
-      if (header) {
-        const record = await CustomHeaderRecord.create({
-          header: header._id,
-          purpose: req.body.maintenancePurpose || '',
-          fromUser: req.body.from || null,
-          toAdmin: req.body.to || null,
-          amount: Number(req.body.maintenanceAmount || 0),
-          dateOfAddition: new Date(),
-          documentImages: (req.body.documentImages || []).map(d => ({ url: d.url }))
-        });
-        item.recordRef = record._id;
-        await item.save();
-        if (req.body.from) {
-          await User.updateOne({ _id: req.body.from }, { $addToSet: { incomingRecords: record._id } });
-        }
-      }
+      // Do NOT create a dynamic Custom Header/Record for 'Maintanance'.
+      // Linking to user's incoming records is handled in users route (appends maintenance without duplicates).
       res.json(item);
     } catch {
       res.status(500).json({ message: 'Server error' });
@@ -123,7 +103,10 @@ router.put('/:id', fetchAdmin, async (req, res) => {
     };
     if (Array.isArray(req.body.month)) {
       payload.month = req.body.month.map(m => ({
-        status: m.status, amount: Number(m.amount || 0), occuranceDate: m.occuranceDate || new Date()
+        status: m.status,
+        amount: Number(m.amount || 0),
+        occuranceDate: m.occuranceDate || new Date(),
+        paidAmount: Number(m.paidAmount || (m.status === 'Paid' ? Number(m.amount || 0) : 0)),
       }));
     }
     const updated = await Maintenance.findByIdAndUpdate(req.params.id, payload, { new: true });

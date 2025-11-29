@@ -1,0 +1,5 @@
+runtime: nodejs22
+service: lakhaniexserver
+handlers:
+  - url: /.*
+    script: auto

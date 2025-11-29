@@ -14,6 +14,7 @@ const MonthItemSchema = new Schema(
     status: { type: String, enum: ['Paid', 'Pending', 'Due'], default: 'Pending' },
     amount: { type: Number, required: true },
     occuranceDate: { type: Date, default: Date.now },
+    paidAmount: { type: Number, default: 0 },
   },
   { _id: false }
 );

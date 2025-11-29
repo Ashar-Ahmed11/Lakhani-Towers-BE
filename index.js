@@ -14,24 +14,24 @@ app.use(express.json())
 app.use(cors({ origin: true }))
 
 // Seed default admin if not exists
-const seedDefaultAdmin = async () => {
-    try {
-        const email = 'admin@lakhanitowers.com';
-        const username = 'Lakhani Admin';
-        const password = 'Karachi2020@';
-        const exists = await Admin.findOne({ email: email.toLowerCase() });
-        if (!exists) {
-            const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash(password, salt);
-            await Admin.create({ username, email: email.toLowerCase(), password: hash });
-            console.log('Default admin created');
-        }
-    } catch (e) {
-        console.error('Admin seed error', e.message);
-    }
-};
+// const seedDefaultAdmin = async () => {
+//     try {
+//         const email = 'admin@lakhanitowers.com';
+//         const username = 'Lakhani Admin';
+//         const password = 'Karachi2020@';
+//         const exists = await Admin.findOne({ email: email.toLowerCase() });
+//         if (!exists) {
+//             const salt = await bcrypt.genSalt(10);
+//             const hash = await bcrypt.hash(password, salt);
+//             await Admin.create({ username, email: email.toLowerCase(), password: hash });
+//             console.log('Default admin created');
+//         }
+//     } catch (e) {
+//         console.error('Admin seed error', e.message);
+//     }
+// };
 
-seedDefaultAdmin();
+// seedDefaultAdmin();
 
 
 // Routes
@@ -47,6 +47,7 @@ app.use('/api/loans', require('./routes/loans'))
 app.use('/api/shops', require('./routes/shops'))
 app.use('/api/shops-maintenance', require('./routes/shopMaintenance'))
 app.use('/api/managers', require('./routes/managers'))
+app.use('/api/auto', require('./routes/auto'))
 
 
 app.listen(port, () => {

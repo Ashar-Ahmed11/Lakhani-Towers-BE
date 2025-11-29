@@ -19,6 +19,7 @@ const MaintenanceSchema = new Schema(
         status: { type: String, enum: ['Pending', 'Paid', 'Due'], default: 'Pending' },
         amount: { type: Number, default: 0 },
         occuranceDate: { type: Date, default: Date.now },
+        paidAmount: { type: Number, default: 0 },
       },
     ],
     flat: { type: Schema.Types.ObjectId, ref: 'Flat' },

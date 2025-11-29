@@ -14,7 +14,7 @@ const UserRefStateSchema = new Schema(
 const ResidentCnicSchema = new Schema(
   {
     cnicName: { type: String, required: true, trim: true },
-    cnicNumber: { type: Number, required: true },
+    cnicNumber: { type: String, required: true },
   },
   { _id: false }
 );

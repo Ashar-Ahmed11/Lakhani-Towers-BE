@@ -13,7 +13,12 @@ router.post('/', fetchAdmin, [body('maintenancePurpose').notEmpty(), body('maint
       maintenancePurpose: req.body.maintenancePurpose,
       maintenanceAmount: req.body.maintenanceAmount,
       documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
-      month: (req.body.month || []).map(m => ({ status: m.status, amount: Number(m.amount || 0), occuranceDate: m.occuranceDate || new Date() })),
+      month: (req.body.month || []).map(m => ({
+        status: m.status,
+        amount: Number(m.amount || 0),
+        occuranceDate: m.occuranceDate || new Date(),
+        paidAmount: Number(m.paidAmount || (m.status === 'Paid' ? Number(m.amount || 0) : 0)),
+      })),
       shop: req.body.shop || null,
       from: req.body.from || null,
       to: req.body.to || null,
@@ -75,7 +80,12 @@ router.put('/:id', fetchAdmin, async (req, res) => {
       to: req.body.to || null,
     };
     if (Array.isArray(req.body.month)) {
-      payload.month = req.body.month.map(m => ({ status: m.status, amount: Number(m.amount || 0), occuranceDate: m.occuranceDate || new Date() }));
+      payload.month = req.body.month.map(m => ({
+        status: m.status,
+        amount: Number(m.amount || 0),
+        occuranceDate: m.occuranceDate || new Date(),
+        paidAmount: Number(m.paidAmount || (m.status === 'Paid' ? Number(m.amount || 0) : 0)),
+      }));
     }
     const updated = await ShopMaintenance.findByIdAndUpdate(req.params.id, payload, { new: true });
     res.json(updated);

@@ -85,6 +85,19 @@ router.get('/:id', fetchAdmin, async (req, res) => {
       const mapId = new Map(maints.map(m => [String(m.recordRef), String(m._id)]));
       out.incomingRecords = out.incomingRecords.map(r => ({ ...r, maintenanceId: mapId.get(String(r._id)) }));
     }
+    // Append Maintenance records (Incoming) for this user if not already linked via CustomHeaderRecord
+    const directMaints = await Maintenance.find({ from: req.params.id }, { _id: 1, maintenancePurpose: 1, maintenanceAmount: 1, month: 1, createdAt: 1, recordRef: 1 });
+    const existingRecIds = new Set((out.incomingRecords || []).map(r => String(r._id)));
+    const maintAsIncoming = (directMaints || []).filter(m => !m.recordRef || !existingRecIds.has(String(m.recordRef))).map(m => ({
+      _id: m._id,
+      purpose: m.maintenancePurpose,
+      amount: Number(m.maintenanceAmount || 0),
+      month: m.month || [],
+      dateOfAddition: m.createdAt,
+      header: { headerName: 'Maintanance', headerType: 'Incoming' },
+      maintenanceId: m._id,
+    }));
+    out.incomingRecords = [...(out.incomingRecords || []), ...maintAsIncoming];
     // Append Shop Maintenance records (Incoming) for this user
     const shopMaints = await ShopMaintenance.find({ from: req.params.id }, { _id: 1, maintenancePurpose: 1, maintenanceAmount: 1, month: 1, createdAt: 1 });
     const shopMaintAsIncoming = shopMaints.map(sm => ({
