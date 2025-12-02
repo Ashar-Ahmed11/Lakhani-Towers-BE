@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 
 const LoanSchema = new Schema(
   {
-    to: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    to: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
     purpose: { type: String, required: true, trim: true },
     amount: { type: Number, required: true },
     status: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' },

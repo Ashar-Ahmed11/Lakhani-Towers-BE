@@ -111,20 +111,7 @@ router.get('/:id', fetchAdmin, async (req, res) => {
     }));
     out.incomingRecords = [...(out.incomingRecords || []), ...shopMaintAsIncoming]
       .sort((a, b) => new Date(b.dateOfAddition || b.createdAt || 0) - new Date(a.dateOfAddition || a.createdAt || 0));
-    // Append Loan records (Incoming) where this user is the 'to'
-    const loans = await Loan.find({ to: req.params.id }, { _id: 1, purpose: 1, amount: 1, status: 1, date: 1, createdAt: 1 });
-    const loanAsIncoming = loans.map(l => ({
-      _id: l._id,
-      purpose: l.purpose,
-      amount: Number(l.amount || 0),
-      month: [], // non-recurring
-      dateOfAddition: l.date || l.createdAt,
-      header: { headerName: 'Loan', headerType: 'Incoming' },
-      loanId: l._id,
-      loanStatus: l.status,
-    }));
-    out.incomingRecords = [...(out.incomingRecords || []), ...loanAsIncoming]
-      .sort((a, b) => new Date(b.dateOfAddition || b.createdAt || 0) - new Date(a.dateOfAddition || a.createdAt || 0));
+    // Note: Loans now reference Employee, not User. Skipping loan aggregation here.
     res.json(out);
   } catch {
     res.status(500).json({ message: 'Server error' });

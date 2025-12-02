@@ -26,8 +26,9 @@ router.post(
 
 router.get('/', fetchAdmin, async (req, res) => {
   try {
-    const { from, to, status } = req.query;
+    const { from, to, status, employeeId } = req.query;
     const query = {};
+    if (employeeId) query.employee = employeeId;
     if (from || to) {
       query.dateOfCreation = {};
       if (from) query.dateOfCreation.$gte = new Date(from);
