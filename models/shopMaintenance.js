@@ -9,7 +9,6 @@ const ImageSchema = new Schema(
 
 const ShopMaintenanceSchema = new Schema(
   {
-    maintenancePurpose: { type: String, required: true, trim: true },
     maintenanceAmount: { type: String, required: true, trim: true },
     documentImages: [ImageSchema],
     month: [
@@ -21,7 +20,6 @@ const ShopMaintenanceSchema = new Schema(
       },
     ],
     shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
-    from: { type: Schema.Types.ObjectId, ref: 'User' },
     to: { type: Schema.Types.ObjectId, ref: 'Admin' },
   },
   { timestamps: true }

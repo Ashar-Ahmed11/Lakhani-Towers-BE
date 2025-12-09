@@ -17,21 +17,30 @@ router.post(
         header: req.body.header,
         purpose: req.body.purpose || '',
         fromUser: req.body.fromUser || null,
+        fromVendorName: req.body.fromVendorName || '',
+        fromVendorPhone: req.body.fromVendorPhone || '',
         fromAdmin: req.body.fromAdmin || null,
         toUser: req.body.toUser || null,
         toAdmin: req.body.toAdmin || null,
+        subHeader: req.body.subHeader || null,
         month: req.body.month || [],
         documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
         amount: Number(req.body.amount || 0),
-        dateOfAddition: req.body.dateOfAddition || new Date()
+        dateOfAddition: req.body.dateOfAddition || new Date(),
+        outstanding: req.body.outstanding ? {
+          amount: Number(req.body.outstanding.amount || 0),
+          status: req.body.outstanding.status === 'Paid' ? 'Paid' : 'Due',
+          FromDate: req.body.outstanding.FromDate ? new Date(req.body.outstanding.FromDate) : new Date(),
+          ToDate: req.body.outstanding.ToDate ? new Date(req.body.outstanding.ToDate) : new Date(),
+        } : undefined
       });
-      // link to user arrays based on header type
+      // link to flat arrays based on header type
       const header = await require('../models/customHeader').findById(req.body.header);
       if (header?.headerType === 'Incoming' && req.body.fromUser) {
-        await require('../models/user').updateOne({ _id: req.body.fromUser }, { $addToSet: { incomingRecords: item._id } });
+        await require('../models/flat').updateOne({ _id: req.body.fromUser }, { $addToSet: { incomingRecords: item._id } });
       }
       if (header?.headerType === 'Expense' && req.body.toUser) {
-        await require('../models/user').updateOne({ _id: req.body.toUser }, { $addToSet: { expenseRecords: item._id } });
+        await require('../models/flat').updateOne({ _id: req.body.toUser }, { $addToSet: { expenseRecords: item._id } });
       }
       res.json(item);
     } catch {
@@ -67,8 +76,9 @@ router.get('/', fetchAdmin, async (req, res) => {
     const baseList = await CustomHeaderRecord.find({ ...query, ...headerFilter })
       .sort({ createdAt: -1 })
       .populate({ path: 'header' })
-      .populate({ path: 'fromUser', select: 'userName userMobile' })
-      .populate({ path: 'toUser', select: 'userName userMobile' })
+      .populate({ path: 'subHeader' })
+      .populate({ path: 'fromUser' })
+      .populate({ path: 'toUser' })
       .populate({ path: 'fromAdmin', select: 'username email' })
       .populate({ path: 'toAdmin', select: 'username email' });
     let list = baseList;
@@ -93,8 +103,9 @@ router.get('/:id', fetchAdmin, async (req, res) => {
   try {
     const item = await CustomHeaderRecord.findById(req.params.id)
       .populate({ path: 'header' })
-      .populate({ path: 'fromUser', select: 'userName userMobile' })
-      .populate({ path: 'toUser', select: 'userName userMobile' })
+      .populate({ path: 'subHeader' })
+      .populate({ path: 'fromUser' })
+      .populate({ path: 'toUser' })
       .populate({ path: 'fromAdmin', select: 'username email' })
       .populate({ path: 'toAdmin', select: 'username email' });
     res.json(item);
@@ -108,8 +119,8 @@ router.get('/public/:id', async (req, res) => {
   try {
     const item = await CustomHeaderRecord.findById(req.params.id)
       .populate({ path: 'header' })
-      .populate({ path: 'fromUser', select: 'userName userMobile' })
-      .populate({ path: 'toUser', select: 'userName userMobile' })
+      .populate({ path: 'fromUser' })
+      .populate({ path: 'toUser' })
       .populate({ path: 'fromAdmin', select: 'username email' })
       .populate({ path: 'toAdmin', select: 'username email' });
     if (!item) return res.status(404).json({ message: 'Not found' });
@@ -125,6 +136,17 @@ router.put('/:id', fetchAdmin, async (req, res) => {
       ...req.body,
     };
     if (req.body.purpose !== undefined) payload.purpose = req.body.purpose;
+    if (req.body.fromVendorName !== undefined) payload.fromVendorName = req.body.fromVendorName;
+    if (req.body.fromVendorPhone !== undefined) payload.fromVendorPhone = req.body.fromVendorPhone;
+    if (req.body.subHeader !== undefined) payload.subHeader = req.body.subHeader || null;
+    if (req.body.outstanding !== undefined) {
+      payload.outstanding = {
+        amount: Number(req.body.outstanding.amount || 0),
+        status: req.body.outstanding.status === 'Paid' ? 'Paid' : 'Due',
+        FromDate: req.body.outstanding.FromDate ? new Date(req.body.outstanding.FromDate) : new Date(),
+        ToDate: req.body.outstanding.ToDate ? new Date(req.body.outstanding.ToDate) : new Date(),
+      };
+    }
     const updated = await CustomHeaderRecord.findByIdAndUpdate(req.params.id, payload, { new: true });
     res.json(updated);
   } catch {
@@ -138,12 +160,11 @@ router.delete('/:id', fetchAdmin, async (req, res) => {
     await CustomHeaderRecord.findByIdAndDelete(req.params.id);
     if (rec) {
       const header = await require('../models/customHeader').findById(rec.header);
-      const User = require('../models/user');
       if (header?.headerType === 'Incoming' && rec.fromUser) {
-        await User.updateOne({ _id: rec.fromUser }, { $pull: { incomingRecords: rec._id } });
+        await require('../models/flat').updateOne({ _id: rec.fromUser }, { $pull: { incomingRecords: rec._id } });
       }
       if (header?.headerType === 'Expense' && rec.toUser) {
-        await User.updateOne({ _id: rec.toUser }, { $pull: { expenseRecords: rec._id } });
+        await require('../models/flat').updateOne({ _id: rec.toUser }, { $pull: { expenseRecords: rec._id } });
       }
     }
     res.json({ success: true });

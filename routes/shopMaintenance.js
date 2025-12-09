@@ -5,12 +5,11 @@ const fetchAdmin = require('../middleware/fetchadmin');
 
 const router = express.Router();
 
-router.post('/', fetchAdmin, [body('maintenancePurpose').notEmpty(), body('maintenanceAmount').notEmpty()], async (req, res) => {
+router.post('/', fetchAdmin, [body('maintenanceAmount').notEmpty()], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   try {
     const item = await ShopMaintenance.create({
-      maintenancePurpose: req.body.maintenancePurpose,
       maintenanceAmount: req.body.maintenanceAmount,
       documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
       month: (req.body.month || []).map(m => ({
@@ -20,7 +19,6 @@ router.post('/', fetchAdmin, [body('maintenancePurpose').notEmpty(), body('maint
         paidAmount: Number(m.paidAmount || (m.status === 'Paid' ? Number(m.amount || 0) : 0)),
       })),
       shop: req.body.shop || null,
-      from: req.body.from || null,
       to: req.body.to || null,
     });
     res.json(item);
@@ -42,8 +40,20 @@ router.get('/', fetchAdmin, async (req, res) => {
         query.createdAt.$lte = dt;
       }
     }
-    let list = await ShopMaintenance.find(query).sort({ createdAt: -1 }).populate({ path: 'shop', select: 'shopNumber' }).populate({ path: 'from', select: 'userName userMobile' });
-    if (q) list = list.filter(x => (x.maintenancePurpose||'').toLowerCase().includes(String(q).toLowerCase()));
+    let list = await ShopMaintenance.find(query).sort({ createdAt: -1 }).populate({ path: 'shop' });
+    if (q) {
+      const lower = String(q||'').toLowerCase();
+      list = list.filter(x => {
+        const s = x.shop || {};
+        const owner = s.owner || {};
+        const tenant = s.tenant || {};
+        return String(s.shopNumber||'').toLowerCase().includes(lower) ||
+               String(owner.userName||'').toLowerCase().includes(lower) ||
+               String(owner.userMobile||'').includes(lower) ||
+               String(tenant.userName||'').toLowerCase().includes(lower) ||
+               String(tenant.userMobile||'').includes(lower);
+      });
+    }
     if (status) {
       list = (list || []).filter(r => {
         const months = r.month || [];
@@ -62,7 +72,7 @@ router.get('/', fetchAdmin, async (req, res) => {
 
 router.get('/:id', fetchAdmin, async (req, res) => {
   try {
-    const item = await ShopMaintenance.findById(req.params.id).populate({ path: 'shop', select: 'shopNumber' }).populate({ path: 'from', select: 'userName userMobile' });
+    const item = await ShopMaintenance.findById(req.params.id).populate({ path: 'shop' });
     res.json(item);
   } catch {
     res.status(500).json({ message: 'Server error' });
@@ -72,11 +82,9 @@ router.get('/:id', fetchAdmin, async (req, res) => {
 router.put('/:id', fetchAdmin, async (req, res) => {
   try {
     const payload = {
-      maintenancePurpose: req.body.maintenancePurpose,
       maintenanceAmount: req.body.maintenanceAmount,
       documentImages: (req.body.documentImages || []).map(d => ({ url: d.url })),
       shop: req.body.shop || null,
-      from: req.body.from || null,
       to: req.body.to || null,
     };
     if (Array.isArray(req.body.month)) {

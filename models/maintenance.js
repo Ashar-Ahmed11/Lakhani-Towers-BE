@@ -11,7 +11,6 @@ const ImageSchema = new Schema(
 
 const MaintenanceSchema = new Schema(
   {
-    maintenancePurpose: { type: String, required: true, trim: true },
     maintenanceAmount: { type: String, required: true, trim: true },
     documentImages: [ImageSchema],
     month: [
@@ -22,8 +21,13 @@ const MaintenanceSchema = new Schema(
         paidAmount: { type: Number, default: 0 },
       },
     ],
+    outstanding:{
+      amount: { type: Number, default: 0 },
+      status: { type: String, enum: [ 'Paid', 'Due'], default: 'Due' },
+      FromDate: { type: Date, default: Date.now },
+      ToDate: { type: Date, default: Date.now },
+    },
     flat: { type: Schema.Types.ObjectId, ref: 'Flat' },
-    from: { type: Schema.Types.ObjectId, ref: 'User' },
     to: { type: Schema.Types.ObjectId, ref: 'Admin' },
     recordRef: { type: Schema.Types.ObjectId, ref: 'CustomHeaderRecord' },
   },
