@@ -5,9 +5,12 @@ const { Schema } = mongoose;
 const UserSchema = new Schema(
   {
     userName: { type: String, required: true, trim: true },
+    cnicNumber: { type: String },
+    userPhoto: { type: String, default: null },
     userMobile: { type: Number, required: true },
+    dateOfJoining: { type: Date, default: Date.now }
   },
-  { _id: false }
+  { timestamps: true }
 );
 
 const ImageSchema = new Schema(
@@ -19,10 +22,30 @@ const ShopSchema = new Schema(
   {
     shopNumber: { type: String, required: true, trim: true },
     owner: UserSchema,
-    rented: { type: Boolean, default: false },
     activeStatus: { type: String, enum: ['Tenant', 'Owner'], default: 'Owner' },
     tenant: UserSchema,
-    renter: UserSchema,
+    maintenanceRecord:{
+      MonthlyMaintenance:{type:Number,default:0},
+      Outstandings:{
+        amount:{type:Number,default:0},
+        fromDate:{type:Date,default:Date.now},
+        toDate:{type:Date,default:Date.now},
+      },
+      OtherOutstandings:{
+        remarks:{type:String,default:''},
+        amount:{type:Number,default:0},
+      },
+      monthlyOutstandings:{ 
+        amount:{type:Number,default:0},
+      },
+      AdvanceMaintenance:{
+        amount:{type:Number,default:0},
+        fromDate:{type:Date,default:Date.now},
+        toDate:{type:Date,default:Date.now},
+      },
+      paidAmount:{type:Number,default:0},
+      
+    },
     documentImages: [ImageSchema],
   },
   { timestamps: true }

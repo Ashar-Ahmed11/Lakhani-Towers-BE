@@ -10,7 +10,26 @@ const EmployeeSchema = new Schema(
     employeeCNIC: { type: String },
     employeeVehicleNumber: { type: String, default: null },
     drivingLicenseNumber: { type: String, default: null },
-    employeeSalaryRecords: [{ type: Schema.Types.ObjectId, ref: 'Salary' }],
+    // employeeSalaryRecords: [{ type: Schema.Types.ObjectId, ref: 'Salary' }],
+    salaryRecord: {
+      MonthlySalary: { type: Number, default: 0 },
+      Payables: {
+        amount: { type: Number, default: 0 },
+        fromDate: { type: Date, default: Date.now },
+        toDate: { type: Date, default: Date.now },
+      },
+      monthlyPayables: {
+        amount: { type: Number, default: 0 },
+      },
+      loan: {
+        amount: { type: Number, default: 0 },
+        fromDate: { type: Date, default: Date.now },
+        toDate: { type: Date, default: Date.now },
+        paidAmount: { type: Number, default: 0 },
+      },
+      paidAmount: { type: Number, default: 0 },
+
+    },
     dateOfJoining: { type: Date, default: Date.now },
   },
   { timestamps: true }
