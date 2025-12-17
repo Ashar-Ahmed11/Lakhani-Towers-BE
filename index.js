@@ -49,6 +49,9 @@ app.use('/api/shops', require('./routes/shops'))
 app.use('/api/shops-maintenance', require('./routes/shopMaintenance'))
 app.use('/api/managers', require('./routes/managers'))
 app.use('/api/auto', require('./routes/auto'))
+app.use('/api/electricity-bills', require('./routes/electricityBills'))
+app.use('/api/miscellaneous-expenses', require('./routes/miscellaneousExpenses'))
+app.use('/api/events', require('./routes/events'))
 
 
 app.listen(port, () => {
