@@ -52,6 +52,7 @@ app.use('/api/auto', require('./routes/auto'))
 app.use('/api/electricity-bills', require('./routes/electricityBills'))
 app.use('/api/miscellaneous-expenses', require('./routes/miscellaneousExpenses'))
 app.use('/api/events', require('./routes/events'))
+app.use('/api/receipts', require('./routes/receipts'))
 
 
 app.listen(port, () => {

@@ -17,6 +17,8 @@ const ElectricityBillSchema = new Schema(
       monthlyPayables: {
         amount: { type: Number, default: 0 },
       },
+      // Tracks last monthly addition based on dateOfCreation schedule
+      lastAppliedAt: { type: Date },
       paidAmount: { type: Number, default: 0 },
 
     },
