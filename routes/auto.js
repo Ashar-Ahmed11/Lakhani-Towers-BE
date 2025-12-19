@@ -193,8 +193,8 @@ router.post('/due-months', async (req, res) => {
 router.post('/monthly-rollover', async (req, res) => {
   try {
     const now = new Date();
-    // Timezone-aware first-of-month check (configurable). Defaults to UTC; set ROLL_TZ_OFFSET_MINUTES=300 for PKT (UTC+5).
-    const tzOffsetMinutes = Number(process.env.ROLL_TZ_OFFSET_MINUTES || 0); // e.g., 300 for PKT
+    // Timezone-aware first-of-month check. Hardcoded to PKT (UTC+5) as requested.
+    const tzOffsetMinutes = 300; // PKT
     const localNow = new Date(now.getTime() + tzOffsetMinutes * 60 * 1000);
     const isFirstDayOfMonth = localNow.getUTCDate() === 1;
     // Allow forcing monthly sections via query for testing (e.g. ?forceMonthly=true)
@@ -314,36 +314,29 @@ router.post('/monthly-rollover', async (req, res) => {
       if (empOps.length) await Employee.bulkWrite(empOps);
     }
 
-    // 3) Electricity Bills - add MonthlyBill into monthlyPayables whenever current date is on/after month-after-creation (non-idempotent per call, independent of 1st)
+    // 3) Electricity Bills - add MonthlyBill into monthlyPayables ONLY on local (PKT) monthly anniversary day
+    // Example: created 19/11/25 → update on 19/12/25, 19/01/26, ... not before or after
     const bills = await ElectricityBill.find({}, {
       _id: 1, dateOfCreation: 1, BillRecord: 1
     }).lean();
     const billOps = [];
-    // Helpers based on PKT-localized dates
-    const addMonths = (d, n) => {
-      const dt = new Date(d.getTime());
-      const y = dt.getUTCFullYear();
-      const m = dt.getUTCMonth();
-      const day = dt.getUTCDate();
-      const next = new Date(Date.UTC(y, m + n, day, 0, 0, 0, 0));
-      return next;
+    // Localized (PKT) Y/M/D extractor
+    const getLocalYMD = (d) => {
+      const t = new Date(d.getTime() + tzOffsetMinutes * 60 * 1000);
+      return { y: t.getUTCFullYear(), m: t.getUTCMonth(), d: t.getUTCDate() };
     };
-    const toLocalDay = (d) => new Date(d.getTime() + tzOffsetMinutes * 60 * 1000);
-    const toUTCFromLocal = (d) => new Date(d.getTime() - tzOffsetMinutes * 60 * 1000);
+    const nowYMD = getLocalYMD(now);
 
     for (const b of bills || []) {
       const createdUTC = b?.dateOfCreation ? new Date(b.dateOfCreation) : null;
       const monthlyBill = Number(b?.BillRecord?.MonthlyBill || 0);
       if (!createdUTC || monthlyBill <= 0) continue;
 
-      // In PKT-local domain, if today is on/after one month after creation, add MonthlyBill (every invocation)
-      const createdLocal = toLocalDay(new Date(Date.UTC(
-        createdUTC.getUTCFullYear(),
-        createdUTC.getUTCMonth(),
-        createdUTC.getUTCDate(), 0, 0, 0, 0
-      )));
-      const firstChargeLocal = addMonths(createdLocal, 1);
-      if (toLocalDay(localNow) >= firstChargeLocal) {
+      // In PKT-local domain, increment ONLY when today is the same day-of-month as creation,
+      // and at least one full month has passed since creation.
+      const c = getLocalYMD(createdUTC);
+      const monthsDiff = (nowYMD.y - c.y) * 12 + (nowYMD.m - c.m);
+      if (monthsDiff >= 1 && nowYMD.d === c.d) {
         billOps.push({
           updateOne: {
             filter: { _id: b._id },
