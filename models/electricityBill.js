@@ -5,6 +5,7 @@ const { Schema } = mongoose;
 const ElectricityBillSchema = new Schema(
   {
     consumerNumber: { type: Number, required: true },
+    serialNumber: { type: Number },
  
     // employeeSalaryRecords: [{ type: Schema.Types.ObjectId, ref: 'Salary' }],
     BillRecord: {

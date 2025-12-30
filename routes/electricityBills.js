@@ -14,7 +14,17 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     try {
-      const created = await ElectricityBill.create(req.body);
+      const gen = () => Math.floor(10000 + Math.random() * 90000);
+      let serial = null;
+      for (let i = 0; i < 20; i++) {
+        const cand = gen();
+        // eslint-disable-next-line no-await-in-loop
+        const exists = await ElectricityBill.exists({ serialNumber: cand });
+        if (!exists) { serial = cand; break; }
+      }
+      if (!serial) serial = gen();
+      const payload = { ...req.body, serialNumber: serial };
+      const created = await ElectricityBill.create(payload);
       res.json(created);
     } catch {
       res.status(500).json({ message: 'Server error' });

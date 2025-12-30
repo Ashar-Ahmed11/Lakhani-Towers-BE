@@ -11,6 +11,7 @@ const MiscellaneousExpenseSchema = new Schema(
    remarks:{type:String,default:''},
    amount:{type:Number,required:true},
     paidAmount: { type: Number, default: 0 },
+    serialNumber: { type: Number },
     dateOfCreation: { type: Date, default: Date.now },
   },
   { timestamps: true }

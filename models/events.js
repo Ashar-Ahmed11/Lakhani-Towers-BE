@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 const EventsSchema = new Schema(
   {
     GivenFrom: { type: 'String', required: true },
-
+    serialNumber: { type: Number },
     // employeeSalaryRecords: [{ type: Schema.Types.ObjectId, ref: 'Salary' }],
     Event: { type: String, required: true },
     amount: { type: Number, required: true },

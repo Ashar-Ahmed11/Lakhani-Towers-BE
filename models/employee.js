@@ -5,6 +5,7 @@ const { Schema } = mongoose;
 const EmployeeSchema = new Schema(
   {
     employeeName: { type: String, required: true, trim: true },
+    serialNumber: { type: Number },
     employeePhoto: { type: String, default: null },
     employeePhone: { type: Number, required: true },
     employeeCNIC: { type: String },

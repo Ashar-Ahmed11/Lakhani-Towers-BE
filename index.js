@@ -53,6 +53,8 @@ app.use('/api/electricity-bills', require('./routes/electricityBills'))
 app.use('/api/miscellaneous-expenses', require('./routes/miscellaneousExpenses'))
 app.use('/api/events', require('./routes/events'))
 app.use('/api/receipts', require('./routes/receipts'))
+app.use('/api/month-close', require('./routes/monthClose'))
+app.use('/api/serials', require('./routes/serials'))
 
 
 app.listen(port, () => {

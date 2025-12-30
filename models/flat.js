@@ -67,6 +67,7 @@ const UserSchema = new Schema(
 const FlatSchema = new Schema(
   {
     flatNumber: { type: String, required: true, trim: true },
+    serialNumber: { type: Number },
     owner: UserSchema,
     activeStatus: { type: String, enum: ['Tenant', 'Owner'], default: 'Owner' },
     tenant: UserSchema,
