@@ -1,9 +1,19 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Receipts = require('../models/receipts');
+const Counter = require('../models/counter');
 const fetchAdmin = require('../middleware/fetchadmin');
 
 const router = express.Router();
+
+async function getNextReceiptSerial() {
+  const doc = await Counter.findOneAndUpdate(
+    { name: 'receiptsSerial' },
+    { $inc: { value: 1 } },
+    { new: true, upsert: true }
+  );
+  return doc.value;
+}
 
 // Create receipt
 router.post(
@@ -23,12 +33,14 @@ router.post(
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     try {
       const { receiptId, receiptModel, type, amount, receiptSlug, dateOfCreation } = req.body;
+      const serialNumber = await getNextReceiptSerial();
       const created = await Receipts.create({
         receiptId,
         receiptModel,
         type,
         amount,
         receiptSlug,
+        serialNumber,
         dateOfCreation: dateOfCreation ? new Date(dateOfCreation) : new Date(),
       });
       res.json(created);
@@ -39,31 +51,67 @@ router.post(
   }
 );
 
-// List receipts with filters: from, to, q (search in slug), type (Paid/Recieved)
+// Backfill serial numbers for existing receipts starting from 00001
+router.post('/backfill-serials', async (req, res) => {
+  try {
+    const receipts = await Receipts.find({}).sort({ createdAt: 1, _id: 1 }).select('_id').lean();
+    const ops = [];
+    for (let i = 0; i < receipts.length; i++) {
+      ops.push({
+        updateOne: {
+          filter: { _id: receipts[i]._id },
+          update: { $set: { serialNumber: i + 1 } }
+        }
+      });
+    }
+    if (ops.length > 0) await Receipts.bulkWrite(ops);
+    await Counter.findOneAndUpdate(
+      { name: 'receiptsSerial' },
+      { $set: { value: receipts.length } },
+      { upsert: true }
+    );
+    res.json({ success: true, assigned: receipts.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// List receipts with filters: from, to, q (search in slug), slugExact (exact slug), type (Paid/Recieved)
 router.get('/', fetchAdmin, async (req, res) => {
   try {
-    const { from, to, q, type } = req.query;
+    const { from, to, q, slugExact, type } = req.query;
     const query = {};
     if (from || to) {
-      query.createdAt = {};
-      if (from) query.createdAt.$gte = new Date(from);
+      query.dateOfCreation = {};
+      if (from) query.dateOfCreation.$gte = new Date(from);
       if (to) {
         const dt = new Date(to);
         dt.setDate(dt.getDate() + 1);
         dt.setHours(0, 0, 0, 0);
-        query.createdAt.$lt = dt;
+        query.dateOfCreation.$lt = dt;
       }
+    }
+    if (slugExact) {
+      query.receiptSlug = String(slugExact);
     }
     if (type && (type === 'Paid' || type === 'Recieved')) {
       query.type = type;
     }
-    if (q) {
+    if (q && !slugExact) {
       query.$or = [
         { receiptSlug: { $regex: String(q), $options: 'i' } },
         { receiptModel: { $regex: String(q), $options: 'i' } },
       ];
     }
-    const list = await Receipts.find(query).sort({ createdAt: -1 });
+    const list = await Receipts.find(query)
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'receiptId',
+        select: 'flatNumber owner.userName shopNumber consumerNumber lineItem employee',
+        strictPopulate: false,
+        populate: [{ path: 'employee', model: 'Employee', select: 'employeeName', strictPopulate: false }]
+      });
     res.json(list);
   } catch (e) {
     console.error(e);

@@ -9,7 +9,7 @@ const ReceiptsSchema = new Schema(
             required: true,
             refPath: 'receiptModel'
         },
-
+        serialNumber: { type: Number },
         receiptModel: {
             type: String,
             required: true,

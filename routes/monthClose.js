@@ -150,8 +150,8 @@ router.post('/run', async (req, res) => {
     }
 
     const { monthKey, endOfPrevUTC } = getPrevMonthInfo(now);
-    // Compute using same formula as FE (snapshot-of-now approach)
-    const closingBalance = await computeCurrentBalanceFromModels();
+    // Compute closing using Receipts up to end of previous month (Received - Paid)
+    const closingBalance = await computeClosingBalance(endOfPrevUTC);
 
     await MonthClose.updateOne(
       { month: monthKey },
