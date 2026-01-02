@@ -83,14 +83,23 @@ router.get('/', fetchAdmin, async (req, res) => {
     const { from, to, q, slugExact, type } = req.query;
     const query = {};
     if (from || to) {
+      const TZ_OFFSET_MIN = 300; // PKT UTC+5
+      const MS_PER_MIN = 60 * 1000;
+      const ymd = (s) => String(s || '').slice(0, 10);
+      const parseLocalYmdToUtcRange = (ymdStr) => {
+        const parts = ymdStr.split('-').map(Number);
+        if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return null;
+        const startUtcMs = Date.UTC(parts[0], parts[1] - 1, parts[2]) - (TZ_OFFSET_MIN * MS_PER_MIN);
+        const endUtcMs = Date.UTC(parts[0], parts[1] - 1, parts[2] + 1) - (TZ_OFFSET_MIN * MS_PER_MIN);
+        return { start: new Date(startUtcMs), end: new Date(endUtcMs) };
+      };
+
+      const fromRange = from ? parseLocalYmdToUtcRange(ymd(from)) : null;
+      const toRange = to ? parseLocalYmdToUtcRange(ymd(to)) : null;
+
       query.dateOfCreation = {};
-      if (from) query.dateOfCreation.$gte = new Date(from);
-      if (to) {
-        const dt = new Date(to);
-        dt.setDate(dt.getDate() + 1);
-        dt.setHours(0, 0, 0, 0);
-        query.dateOfCreation.$lt = dt;
-      }
+      if (fromRange?.start) query.dateOfCreation.$gte = fromRange.start;
+      if (toRange?.end) query.dateOfCreation.$lt = toRange.end;
     }
     if (slugExact) {
       query.receiptSlug = String(slugExact);
